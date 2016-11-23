@@ -7,3 +7,5 @@ which was trained on AN4 dataset.
 * Trained on LibriSpeech 100hrs data.
 * Modified for Phoneme Recognition.
 * Model trained on torgo clean speech dataset gives PER of 8%
+
+It is still a work in progress.
