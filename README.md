@@ -4,7 +4,7 @@ Speech Recognition for speakers with speech impairment due to diseases like (Cer
 * The model is trained on 1000 hours of [Librispeech] (http://www.danielpovey.com/files/2015_icassp_librispeech.pdf) data on normal speakers.
 * Implemented Learning Hidden Unit Contribution Layer for speaker adaptation based on [LEARNING HIDDEN UNIT CONTRIBUTIONS FOR UNSUPERVISED SPEAKER ADAPTATION OF NEURAL NETWORK ACOUSTIC MODELS] (http://homepages.inf.ed.ac.uk/srenals/ps-slt14.pdf)
 * The model is trained and tested on [TORGO](http://dl.acm.org/citation.cfm?id=2423820) speech database for dysarthric speakers (i.e speakers with speech disorders due to Cerebral Palsy) 
-* Implemented Beam Search Decoding using Connectionist Temporal Classification (CTC) and Character Language Modle based on Andrew Mass and Ziang Xie [Lexicon-Free Conversational Speech Recognition with Neural Networks] (http://ai.stanford.edu/~amaas/papers/ctc_clm_naacl_2015.pdf) paper.
+* Implemented Beam Search Decoding using Connectionist Temporal Classification (CTC) and Character Language Model based on Andrew Mass and Ziang Xie [Lexicon-Free Conversational Speech Recognition with Neural Networks] (http://ai.stanford.edu/~amaas/papers/ctc_clm_naacl_2015.pdf) paper.
 * Modified for Phoneme Recognition.
 
 It is still a work in progress.
