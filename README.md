@@ -17,7 +17,7 @@ python create_data.py path_to_speakers_folder path_to destination_folder test_sp
 ```
 For example,
 ```
-python /home/Torgo/data /home/Torgo/destination F01
+python create_data.py /home/Torgo/data /home/Torgo/destination F01
 ```
 path_to_speakers_folder: Here all the speaker folders are located
 path_to_destination: Here test and train folders are located.
