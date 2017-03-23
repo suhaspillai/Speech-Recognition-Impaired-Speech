@@ -28,7 +28,6 @@ The following command will create augmentated data, this script uses [sox](http:
 
 ```
 python create_augmentated_data.py source_folder destination_folder 
-
 ```
 This will create speech files with tempo and speed perturbation and amplified speech files.
 
