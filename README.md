@@ -7,4 +7,31 @@ Speech Recognition for speakers with speech impairment due to diseases like (Cer
 * Implemented Beam Search Decoding using Connectionist Temporal Classification (CTC) and Character Language Model based on Andrew Mass and Ziang Xie [Lexicon-Free Conversational Speech Recognition with Neural Networks](http://ai.stanford.edu/~amaas/papers/ctc_clm_naacl_2015.pdf) paper.
 * Modified for Phoneme Recognition.
 
+## Data Preparation
+
+Download dataset from [data](http://www.cs.toronto.edu/~complingweb/data/TORGO/torgo.html).
+There are total 8 speakers with speech impairment and 7 without speech impairment (normal speakers). Data preparation scripts are in python scripts folder. Following command will create train and test files.
+
+```
+python create_data.py path_to_speakers_folder path_to destination_folder test_speaker
+```
+For example,
+```
+python /home/Torgo/data /home/Torgo/destination F01
+```
+path_to_speakers_folder: Here all the speaker folders are located
+path_to_destination: Here test and train folders are located.
+test_speaker: This speaker's data will be stored in test folder, while other speaker's data in train folder.
+
+For Data Augmentation,
+The following command will create augmentated data, this script uses [sox](http://sox.sourceforge.net/) 
+
+```
+python create_augmentated_data.py source_folder destination_folder 
+
+```
+This will create speech files with tempo and speed perturbation and amplified speech files.
+
 It is still a work in progress.
+
+
