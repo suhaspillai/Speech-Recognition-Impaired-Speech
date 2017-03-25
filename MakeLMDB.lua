@@ -1,5 +1,3 @@
--- Expects data in the format of <root><train/test><datasetname><filename.wav/filename.txt>
--- Creates an LMDB of everything in these folders into a train and test set.
 require 'lfs'
 require 'audio'
 require 'xlua'
@@ -8,15 +6,14 @@ require 'torch'
 require 'parallel'
 
 local tds = require 'tds'
-
 local cmd = torch.CmdLine()
-cmd:option('-rootPath', './dysarthric_dataset/Normal', 'Path to the data')
-cmd:option('-lmdbPath', './dysarthric_dataset/torgo_norm_lmdb', 'Path to save LMDBs to')
-cmd:option('-windowSize', 0.02, 'Window size for audio data')
+cmd:option('-rootPath', '/home/sbp3624/CTCSpeechRecognition/New_dysarthric/merge_ds_norm/F03/train_test_split', 'Path to the data')
+cmd:option('-lmdbPath', '/home/sbp3624/CTCSpeechRecognition/New_dysarthric/merge_ds_norm/F03/train_test_split/lmdb', 'Path to save LMDBs to')
+cmd:option('-windowSize', 0.020, 'Window size for audio data')
 cmd:option('-stride', 0.01, 'Stride for audio data')
 cmd:option('-sampleRate', 16000, 'Sample rate of audio data (Default 16khz)')
 cmd:option('-audioExtension', 'wav', 'The extension of the audio files (wav/mp3/sph/etc)')
-cmd:option('-processes', 8, 'Number of processes used to create LMDB')
+cmd:option('-processes', 16, 'Number of processes used to create LMDB')
 
 local opt = cmd:parse(arg)
 local dataPath = opt.rootPath
@@ -140,19 +137,13 @@ local function createLMDB(dataPath, lmdbPath, id)
     end
 
     local processCounter = 1
-    --map_file_num = {}
-    --map_num_file = {}
     local counter  = 1
     for x = 1, size do
         local result = parallel.children[processCounter]:receive()
         local spect, transcript = unpack(result)
-        
-        --map_file_num[vecs[x]] = x
-        --map_num_file[x] = vecs[x]
         readerSpect:put(x, spect)
         readerTrans:put(x, transcript)
         
-        -- craete a table to get file name
         
         -- commit buffer
         if x % 500 == 0 then
@@ -176,8 +167,6 @@ local function createLMDB(dataPath, lmdbPath, id)
     
     closeWriter(dbSpect, readerSpect)
     closeWriter(dbTrans, readerTrans)
-    --torch.save('file_to_count.th',map_file_num)
-    --torch.save('count_to_file.th',map_num_file)
 end
 
 function parent()
@@ -193,18 +182,9 @@ function parent()
         end
     end
 
-    parallel.children:exec(looper)
-    
-    createLMDB(dataPath .. '/train', lmdbPath .. '/train', 'train')
+    parallel.children:exec(looper)    
+    --createLMDB(dataPath .. '/train', lmdbPath .. '/train', 'train')
     createLMDB(dataPath .. '/test', lmdbPath .. '/test', 'test')
-    createLMDB(dataPath .. '/val', lmdbPath .. '/val', 'val') 
-    --[[
-    createLMDB(dataPath .. '/train_M04', lmdbPath .. '/train_M04', 'train')
-    createLMDB(dataPath .. '/test_M04', lmdbPath .. '/test_M04', 'test')
-    createLMDB(dataPath .. '/val_except_M04', lmdbPath .. '/val_except_M04', 'val') 
-  --]]
-
-
     parallel.close()
 end
 
