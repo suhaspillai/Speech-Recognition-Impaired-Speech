@@ -31,6 +31,13 @@ python create_augmentated_data.py source_folder destination_folder
 ```
 This will create speech files with tempo and speed perturbation and amplified speech files.
 
+The input to the model is in lmdb format, running the following command will store the data in lmdb format for fast data loading.
+
+```
+th MakeLMDB.lua -roottpath /home/torgo/data -lmdbPath /home/torgo/lmdb -windowSize 0.020 -stride 0.01 -sampleRate 16000 -audioExtension wav -processes 16 
+```
+Since, people with speech impairment generally have slow speaking rate, you can try changing the windowSize between 0.010 / 0.015 / 0.020 based on the speaker with speech impairment. Basically, the above command will do an FFT and convert your speech signal to frequency domain. When you change the windowSize, the output after 2 convolution layers will be different, so make sure you have proper model as an input to train.lua. 
+
 It is still a work in progress.
 
 
