@@ -15,24 +15,15 @@ function mapper:__init(dictPath)
         self.alphabet2token[line] = cnt
         self.token2alphabet[cnt] = line
         cnt = cnt + 1
-      
     end
 end
 
 function mapper:encodeString(line)
-    --line = string.lower(line)
+    line = string.lower(line)
     local label = {}
-    local phoneme_table = {}
-    phoneme_table = line:split(' ')
-    --print (line:split(' '))
-    
-    for k,v in ipairs(phoneme_table) do
-      local character = v
-      --local character = line:sub(i, i)
-      --for dictionary mapping
-    
-      --character= string.upper(character)
-      table.insert(label, self.alphabet2token[character])
+    for i = 1, #line do
+        local character = line:sub(i, i)
+        table.insert(label, self.alphabet2token[character])
     end
     return label
 end
@@ -65,8 +56,7 @@ end
 function mapper:tokensToText(tokens)
     local text = ""
     for i, t in ipairs(tokens) do
-        text = text .. self.token2alphabet[tokens[i]]..' '
+        text = text..self.token2alphabet[tokens[i]]
     end
-    --print (text)
     return text
 end

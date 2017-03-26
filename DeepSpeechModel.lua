@@ -31,9 +31,6 @@ local function deepSpeech(opt)
 
     conv:add(nn.View(rnnInputSize, -1):setNumInputDims(3)) -- batch x features x seqLength
     conv:add(nn.Transpose({ 2, 3 }, { 1, 2 })) -- seqLength x batch x features
-    
-    
-    
     local rnns = nn.Sequential()
     local rnnModule = RNNModule(rnnInputsize, rnnHiddenSize, opt)
     rnns:add(rnnModule:clone())
@@ -43,45 +40,7 @@ local function deepSpeech(opt)
         rnns:add(nn.Bottle(nn.BatchNormalization(rnnHiddenSize), 2))
         rnns:add(rnnModule:clone())
     end
-        
-
-    --[[  
-    local stepmodule = nn.Sequential()
-    
-    local noOfHiddenLayers = opt.nbOfHiddenLayers
-    for i = 1,noOfHiddenLayers do
-      local rnn 
-      
-      if opt.gru then
-        print ('inside gru') 
-        --rnn = nn.GRU(rnnInputSize, rnnHiddenSize, nil, opt.dropout/2)
-        rnn = nn.SeqGRU(rnnInputSize, rnnHiddenSize)
-      elseif opt.lstm then
-      
-        print ('inside lstm')
-        --print ('inside lstm module')
-        rnn = nn.SeqLSTM(rnnInputSize,rnnHiddenSize)
-        --stepmodule:add(seqlstm)
-
-      else
-        --rnn = nn.Sequencer(rm)
-        
-        --rnnInputSize rnnHiddenSize
-        local r = nn.Recurrent(rnnHiddenSize, nn.Linear(rnnInputSize,rnnHiddenSize), nn.Linear(rnnHiddenSize, rnnHiddenSize), nn.Sigmoid())
-        rnn = nn.Sequential()
-        rnn:add(r) 
-        rnn = nn.Sequencer(rnn)
-      end
-               
-      stepmodule:add(rnn)
-      
-      -- can put if dropout is required 
-      rnnInputSize = rnnHiddenSize
-    end
-    print (stepmodule)
-     --]]
-    
-    
+  
     local fullyConnected = nn.Sequential()
     fullyConnected:add(nn.BatchNormalization(rnnHiddenSize))
     --fullyConnected:add(nn.Dropout())
@@ -90,11 +49,8 @@ local function deepSpeech(opt)
     local model = nn.Sequential()
     model:add(conv)
     model:add(rnns)
-    --model:add(stepmodule)
     model:add(nn.Bottle(fullyConnected, 2))    --Bottle can have different dims matrices multiply (3*2*3*4) * (4 *10)  = (3*2*3*10) no need to resize and all
     model:add(nn.Transpose({1, 2})) -- batch x seqLength x features
-    
-    print(model)
     model = makeDataParallel(model, opt.nGPU)
     return model
 end

@@ -54,12 +54,10 @@ function saveDataParallel(modelPath, model)
 end
 
 function loadDataParallel(modelPath, nGPU)
-  print (modelPath)
     if nGPU > 1 then
         require 'cudnn'
         require 'BatchBRNNReLU'
     end
-    print (modelPath)
     local model = torch.load(modelPath)
     
     if torch.type(model) == 'nn.DataParallelTable' then
