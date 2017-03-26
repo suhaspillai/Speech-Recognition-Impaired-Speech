@@ -8,14 +8,11 @@ require 'Loader'
 require 'nngraph'
 require 'Mapper'
 require 'ModelEvaluator'
-require 'Layers_Visualization'
+
 local suffix = '_' .. os.date('%Y%m%d_%H%M%S')
 local threads = require 'threads'
 local Network_SA = {}
 local loss_inf = math.huge
-local mean_layers={}
-local std_layers = {}
-local indices_to_layers = {}
 seed = 10
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.manualSeed(seed)
@@ -34,8 +31,8 @@ function Network_SA:init(opt)
         require 'BatchBRNNReLU'
         cutorch.manualSeedAll(seed)
     end
+    self.saveProbMatrix = opt.saveProbMatrix
     self.adaptLayers = opt.adaptLayers
-    self.layer_visualization = Layers_Visualization()
     self.trainingSetLMDBPath = opt.trainingSetLMDBPath
     self.validationSetLMDBPath = opt.validationSetLMDBPath
     self.logsTrainPath = opt.logsTrainPath or nil
@@ -76,17 +73,10 @@ function Network_SA:prepSpeechModel(modelName, opt)
 end
 
 function Network_SA:testNetwork(epoch)
-    -- This actually makes train mode as false and usefule for batch normalization and dropout
+    -- This actually makes train mode as false and useful for batch normalization and dropout
     self.model:evaluate()
-    --local wer, cer = self.tester:runEvaluation(self.model, true, epoch or 1) -- details in log
-    -- for saving predictions to be used for char lm 
-    local wer, cer = self.tester:runEvaluation_v1(self.model, true, epoch or 1) -- details in log    
-    --[[
-    local tbl_modules, tbl_indices = self.layer_visualization:create_plot_data(self.model)
-    indices_to_layers = tbl_indices
-    self.layer_visualization:get_mean_std(tbl_modules,tbl_indices,mean_layers,std_layers)
-    --]]
-    
+    -- For saving predictions to be used for char language model
+    local wer, cer = self.tester:runEvaluation_v1(self.model, self.saveProbMatrix,true, epoch or 1) -- details in log        
     self.model:zeroGradParameters()   --zero the parameters
     self.model:training()
     return wer, cer
@@ -97,12 +87,12 @@ function Network_SA:trainNetwork(epochs, optimizerParams)
     local lossHistory = {}
     local validationHistory = {}
     local criterion = nn.CTCCriterion(true)  -- call ctc loss method
-    local x, gradParameters_norm = self.model:getParameters() --gives learnable parametrs and grads with respect to learnable parameters.
+    local x, gradParameters_norm = self.model:getParameters() --gives learnable parameters and grads with respect to learnable parameters.
     local parameters,gradParameters = self.model:parameters()  
     local optimParamsLayerWise={}
     local average_norm=0 
     
-    -- Initializing learning rate to zero for all layers.
+    -- Initializing learning rate to zero for all layers, only LHU layer is learned
     for i =1,#parameters do    
       table.insert(
                   optimParamsLayerWise,{    
@@ -114,7 +104,7 @@ function Network_SA:trainNetwork(epochs, optimizerParams)
                     nesterov = true
                     }   
                   )
-      end
+    end
     local inputs = torch.Tensor()
     local sizes = torch.Tensor()
     if self.gpu then
@@ -193,7 +183,6 @@ function Network_SA:trainNetwork(epochs, optimizerParams)
     for i = 1, epochs do
         local averageLoss = 0
         average_norm = 0
-        
         local layer_no = 13 -- Check where LHU layer is added 
         -- Update the learning rates for LHU layer
         for iter=1,no_of_adaptLayers do 
@@ -214,7 +203,7 @@ function Network_SA:trainNetwork(epochs, optimizerParams)
             print (string.format('batch: %d --- averageLoss: %f',j, averageLoss))
         end
         
-        print (string.format('Avrage Norm: %d',average_norm/self.indexer.nbOfBatches))        
+        --print (string.format('Avrage Norm: %d',average_norm/self.indexer.nbOfBatches))        
         self.indexer:permuteBatchOrder()
         averageLoss = averageLoss / self.indexer.nbOfBatches -- Calculate the average loss at this epoch.
         
@@ -236,7 +225,7 @@ function Network_SA:trainNetwork(epochs, optimizerParams)
           print ('saving best model')
           self:saveNetwork(self.modelTrainingPath .. 'model_epoch_' .. i .. suffix .. '_' ..'best_model'..'_'.. self.fileName)
         end      
-        print(string.format("Training Epoch: %d Average Loss: %f Average Validation WER: %.2f Average Validation CER: %.2f  Minimum Validation WER: %.2f Min Validation CER :%.2f",
+        print(string.format("Training Epoch: %d Average Loss: %f Average Validation WER: %.2f Average Validation CER: %.2f  Minimum Validation WER: %.2f Minimum Validation CER :%.2f",
             i, averageLoss, 100 * wer, 100 * cer, 100 * min_wer, 100 * min_cer))
 
         table.insert(lossHistory, averageLoss) -- Add the average loss value to the logger.
@@ -264,7 +253,7 @@ function Network_SA:saveNetwork(saveName)
     saveDataParallel(saveName, self.model)
 end
 
---Loads the model into Network.
+--Loads the model.
 function Network_SA:loadNetwork(saveName, modelName)
     self.model = loadDataParallel(saveName, self.nGPU)
     self:addLayers(self.adaptLayers)
@@ -285,7 +274,9 @@ function Network_SA:addLayers(noOfLayers)
   for i = 1 , noOfLayers do
     layer_no = 1 + 2*(i-1)  --(Based on the network configuration)
     self.model:get(2):get(layer_no):insert(new_module) -- This will add module in the end
+    print (self.model)
   end
   
 end
 return Network_SA
+  

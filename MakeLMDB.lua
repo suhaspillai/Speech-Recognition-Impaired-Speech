@@ -7,8 +7,8 @@ require 'parallel'
 
 local tds = require 'tds'
 local cmd = torch.CmdLine()
-cmd:option('-rootPath', '/home/sbp3624/CTCSpeechRecognition/New_dysarthric/merge_ds_norm/F03/train_test_split', 'Path to the data')
-cmd:option('-lmdbPath', '/home/sbp3624/CTCSpeechRecognition/New_dysarthric/merge_ds_norm/F03/train_test_split/lmdb', 'Path to save LMDBs to')
+cmd:option('-rootPath', './temp_data', 'Path to the data')
+cmd:option('-lmdbPath', './temp_data/lmdb', 'Path to save LMDBs to')
 cmd:option('-windowSize', 0.020, 'Window size for audio data')
 cmd:option('-stride', 0.01, 'Stride for audio data')
 cmd:option('-sampleRate', 16000, 'Sample rate of audio data (Default 16khz)')
@@ -66,6 +66,7 @@ local function createLMDB(dataPath, lmdbPath, id)
             local audioFilePath = opts.file
             local transcriptFilePath = opts.file:gsub(opts.extension, ".txt")
             local opt = opts.opt
+            
             local audioFile = audio.load(audioFilePath)
             local length = audio.spectrogram(audioFile, opt.windowSize * opt.sampleRate, 'hamming', opt.stride * opt.sampleRate):size(2)
             return { audioFilePath, transcriptFilePath, length }
@@ -79,25 +80,36 @@ local function createLMDB(dataPath, lmdbPath, id)
         local processCounter = 1
         for x = 1, size do
             local result = parallel.children[processCounter]:receive()
-            vecs[x] = tds.Vec(unpack(result))
-            xlua.progress(x, size)
-            if x % 1000 == 0 then collectgarbage() end
-            -- send next index to retrieve
-            if x + opt.processes <= size then
-                local opts = { extension = extension, file = buffer[x + opt.processes], opt = opt }
-                parallel.children[processCounter]:send({ opts, getSize })
-            end
-            if processCounter == opt.processes then
-                processCounter = 1
-            else
-                processCounter = processCounter + 1
-            end
+          
+            
+              vecs[x] = tds.Vec(unpack(result))
+              xlua.progress(x, size)
+              if x % 1000 == 0 then collectgarbage() end
+              -- send next index to retrieve
+              if x + opt.processes <= size then
+                  local opts = { extension = extension, file = buffer[x + opt.processes], opt = opt }
+                  parallel.children[processCounter]:send({ opts, getSize })
+              end
+              if processCounter == opt.processes then
+                  processCounter = 1
+              else
+                  processCounter = processCounter + 1
+              end
+            
         end
         print("Sorting...")
         -- sort the files by length
         local function comp(a, b) return a[3] < b[3] end
 
         vecs:sort(comp)
+        -- remove files less than 40 time steps and  greater than 10000 timesteps
+        while vecs[1][3]<40 do
+          vecs:remove(1)
+        end
+        while vecs[#vecs][3]>10000 do
+          vecs:remove(#vecs)
+        end
+        
         torch.save(sortIdsPath, vecs)
     else
         vecs = torch.load(sortIdsPath)
@@ -110,8 +122,10 @@ local function createLMDB(dataPath, lmdbPath, id)
     local dbTrans, readerTrans = startWriter(lmdbPath .. '/trans', 'trans')
 
     local function getData(opts)
+      
         local opt = opts.opt
         local audioFile = audio.load(opts.audioFilePath)
+        --print (audioFile) 
         local spect = audio.spectrogram(audioFile, opt.windowSize * opt.sampleRate, 'hamming', opt.stride * opt.sampleRate) -- freq-by-frames tensor
 
         -- put into lmdb
@@ -183,7 +197,7 @@ function parent()
     end
 
     parallel.children:exec(looper)    
-    --createLMDB(dataPath .. '/train', lmdbPath .. '/train', 'train')
+    createLMDB(dataPath .. '/train', lmdbPath .. '/train', 'train')
     createLMDB(dataPath .. '/test', lmdbPath .. '/test', 'test')
     parallel.close()
 end
@@ -193,4 +207,5 @@ if not ok then
     print(err)
     parallel.close()
 end
+
 
