@@ -49,7 +49,7 @@ First train on mixture of (impaired + normal) speakers data keeping test speaker
 ```
 th Train.lua
 ```
-Use the trained model to adapt to the new speaker by using small subset of test speaker data.
+Use the trained model to adapt to the test speaker by using small subset of test speaker data.
 
 ```
 th Train_SA.lua 
