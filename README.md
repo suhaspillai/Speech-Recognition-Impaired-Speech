@@ -47,15 +47,12 @@ Since, people with speech impairment generally have slow speaking rate, you can 
 
 First train on mixture of (impaired + normal) speakers data keeping test speaker aside, adding dropout only to conv layers.
 ```
-
 th Train.lua
-
 ```
 Use the trained model to adapt to the new speaker by using small subset of test speaker data.
 
 ```
 th Train_SA.lua 
-
 ```
 This will add LHU layer and train LHU layer to adapt to test speaker data.
 
@@ -65,7 +62,6 @@ For testing, use the adapted model
 
 ```
 th Test.lua
-
 ```
 
 
